@@ -12,34 +12,36 @@ Allerdings hier dann den Befehl ausführen
 "make attiny84"
 
 Danach sollte im Ordner die Dateien enthalten sein:
-UltraCIC-III_t84.hex
-UltraCIC-III.eep.hex
+- UltraCIC-III_t84.hex
+- UltraCIC-III.eep.hex
 
 Zusätzlich für das Aufspielen auf den ATTiny84/84a müssen in AVRDUDE (bevorzuge das GUI AVRDUDESS)
 folgende Fuses gesetzt werden:
-
-L: 0xE2
-H: 0xDF
-E: 0xFF (oder 0x01, beides deaktiviert das Self-Programming)
+- L: 0xE2
+- H: 0xDF
+- E: 0xFF (oder 0x01, beides deaktiviert das Self-Programming)
 
 Ausserdem muss auch der Bitclock gesetzt werden um sicher zu stellen das es auch sauber geschrieben wird bzw. kein Fehler kommt
--B 125kHz
+
+- -B 125kHz
+  
 oder
--B 32kHz
+
+- -B 32kHz
 
 Sofern in der UltraCIC-III.asm nicht nochmal abgeänderst ist der Standart Boot auf NTSC und man muss für PAL dann das Modul im PAL N64 einmal einschlaten und wieder aus um das die Region umschaltet.
 
 Will man aber PAL als Standart dann wie im Original Code folgende Stelle ändern
 
-.ESEG
-;.db 0x08   ;set PAL as inital region
-.db 0x00    ;set NTSC as initial region
+- .ESEG
+- ;.db 0x08   ;set PAL as inital region
+- .db 0x00    ;set NTSC as initial region
 
 in
 
-.ESEG
-.db 0x08   ;set PAL as inital region
-;.db 0x00    ;set NTSC as initial region
+- .ESEG
+- .db 0x08   ;set PAL as inital region
+- ;.db 0x00    ;set NTSC as initial region
 
 
 Link zum Originalen Projekt:
@@ -61,33 +63,35 @@ However, execute the command here:
 "make attiny84"
 
 Afterwards, the folder should contain the following files:
-UltraCIC-III_t84.hex
-UltraCIC-III.eep.hex
+- UltraCIC-III_t84.hex
+- UltraCIC-III.eep.hex
 
 Additionally, for flashing to the ATTiny84/84a, the following fuses must be set in AVRDUDE (preferably the GUI AVRDUDESS):
 
-L: 0xE2
-H: 0xDF
-E: 0xFF (or 0x01, both disable self-programming)
+- L: 0xE2
+- H: 0xDF
+- E: 0xFF (or 0x01, both disable self-programming)
 
 Furthermore, the bit clock must also be set to ensure that the write is clean and no errors occur:
--B 125kHz
+- -B 125kHz
+  
 or
--B 32kHz
+
+- -B 32kHz
 
 Unless modified again in UltraCIC-III.asm, the default boot is NTSC, and for PAL, you must turn the module on and off once in the PAL N64 to change the region. switches.
 
 However, if you want to set PAL as the default, change the following line as in the original code:
 
-.ESEG
-;.db 0x08 ;set PAL as initial region
-.db 0x00 ;set NTSC as initial region
+- .ESEG
+- ;.db 0x08 ;set PAL as initial region
+- .db 0x00 ;set NTSC as initial region
 
 in
 
-.ESEG
-.db 0x08 ;set PAL as initial region
-;.db 0x00 ;set NTSC as initial region
+- .ESEG
+- .db 0x08 ;set PAL as initial region
+- ;.db 0x00 ;set NTSC as initial region
 
 
 Link to the original project:
