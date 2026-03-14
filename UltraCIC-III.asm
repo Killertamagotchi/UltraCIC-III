@@ -1,97 +1,37 @@
-.if defined(attiny25)
-.include "tn25def.inc"
-.message "Build UltraCIC-III for ATtiny25"
-.elif defined(attiny45)
-.include "tn45def.inc"
-.message "Build UltraCIC-III for ATtiny45"
-.elif defined(attiny85)
-.include "tn85def.inc"
-.message "Build UltraCIC-III for ATtiny85"
-.else
-.warning "no suitable MCU specified"
-.endif
+; UltraCIC-III - Portiert für ATtiny84A (Repro-PCB)
+; Basierend auf dem Code von jesgdev / saturnu / ManCloud
+.if defined(attiny84)
+.include "tn84def.inc"
+.message "Build UltraCIC-III for ATtiny84"
 
+; --- Hardware-Mapping für dieses spezifische Board ---
+.equ CICPINS  = PINA
+.equ CICPORT  = PORTA
+.equ CICDDR   = DDRA
+.equ CICPIN0  = 6      ; N64 D0 (Data I/O) -> ATtiny Pin 7 (PA6)
+.equ CICPIN1  = 4      ; N64 CLK (Clock)   -> ATtiny Pin 9 (PA4)
+.equ CICPIN2  = 2      ; Unbenutzt (Ersatz für PB0)
 
-
-
-;UltraCIC-III.asm
-;N64 CIC clone!
-;ATtiny85
-;
-;Author: jesgdev
-;Credits:
-;   ccsfp221-kammerstetter.pdf - Thanks to those authors!
-;   KRIKzz - 710x dumps and testing.
-;   saturnu - UltraCIC-II mix mode features.
-;   ManCloud - UltraCIC-III - auto region change
-;
-; How-To change region: insert into console. If it doesn't boot, power off and power on again. Region is changed
-;
-;Pinout(references(direct, pad,  etc..) refer to the CIC footprint on a typical cart board).
-;1: Reset, this is the actual /RST pin of AVR.  Pad is VCC.  Lift and jump or disconnect VCC from pad.
-;2: CLKIN, unused pad, jumper to 11(cic pinout), cart edge #19
-;3: ??, unused pad
-;4: GND, unused pad, jump to nearby pad(last 3 in row are GND)
-;5: CICPIN2_2, direct, tied to GND(always?)
-;6: CICPIN2_1, direct, cart edge #43 (Data Clock)
-;7: CICPIN2_0, direct, cart edge #18 (Data I/O)
-;8: VCC, direct
-;
-;1 cic clock = 2 AVR clocks.  Clocks given in code are avr clocks.
-;
-;Programming the AVR:
-;Fuses:
-;/Reset enabled
-;Disable debug wire
-;disable watchdog
-;disable bod(probably doesn't matter?)
-;No clock div(default is div8, make sure to disable!)
-;Fastest startup, external clock
-;SUT=00
-;CKSEL=0000
-;
-;tiny85
-;LOW: 0xc0
-;high: 0xdf
-
-
-;------------------------------------------------
-;Choose the CIC type(pick one):
-;------------------------------------------------
-.equ CIC_TYPE=0b00    ;6102/7101
-;.equ CIC_TYPE=0b01    ;6103/7103
-;.equ CIC_TYPE=0b10    ;6106/7106
-;.equ CIC_TYPE=0b11    ;6101/7102
-
-;------------------------------------------------
-
-;registers
+; --- Register-Definitionen (Original beibehalten) ---
 .def const0=r0
 .def const1=r1
 .def constF=r15
-.def areg=r16           ;cic a register
-.def xreg=r17           ;cic x register
-.def flags=r18          ;bit flags, descriptions below.
-.def scr0=r22           ;scratch registers(scr2 & scr3 must be a 16bit pair)
+.def areg=r16
+.def xreg=r17
+.def flags=r18
+.def scr0=r22
 .def scr1=r23
-.def scr2=r24           ;LSB of pair
-.def scr3=r25           ;MSB of pair
+.def scr2=r24
+.def scr3=r25
 
-;ram, need 64 consecutive bytes...watch the stack!
 .equ CICRAM_START=0x80
 
-;I/O
-.equ CICPINS=PINB
-.equ CICPORT=PORTB
-.equ CICDDR=DDRB
-.equ CICPIN0=PINB2      ;cic port2 pin0
-.equ CICPIN1=PINB1      ;cic port2 pin1
-.equ CICPIN2=PINB0      ;cic port2 pin2
+; Flags
+.equ FLAG_x105_MODE=0
+.equ FLAG_M0112_M0132_MODE=1
+.equ FLAG_710x_MODE=2
 
-;Flags(bit location of flag in flags register,  do not change these values)
-.equ FLAG_x105_MODE=0           ;0=x10x, 1=x105
-.equ FLAG_M0112_M0132_MODE=1    ;m0112 mode(see method for use)
-.equ FLAG_710x_MODE=2           ;0=610x, 1=710x
+.equ CIC_TYPE=0b00    ; Standard 6102/7101
 
 .cseg
 .org 0x00
@@ -101,31 +41,26 @@
     rjmp isr_tim0_ov
 
 reset:
-
-    ;ATtiny85 reset delay=14clk
-
-    ;device setup, adapt as needed for device
-    ;default CIC pins to input with pullup
-    nop
+    ; I/O Setup für Port A
     ldi scr0, 0
-    out DDRB, scr0          ;inputs
+    out CICDDR, scr0        ; Alle als Input
     ldi scr0, 0xFF
-    out PORTB, scr0         ;with pullup
-    ldi scr0, 0x0B
-    out PRR, scr0           ;power reduction - all but TIMER0
+    out CICPORT, scr0       ; Pullups aktivieren
+    
+    ldi scr0, 0x07          ; Power Reduction für tiny84 (Timer0 anlassen)
+    out PRR, scr0
     ldi scr0, 0x80
-    out ACSR, scr0          ;comparator disable
-    ldi scr0, LOW(RAMEND)   ;STACK!  Make sure SPH is not needed for the part
+    out ACSR, scr0
+    ldi scr0, LOW(RAMEND)
     out SPL, scr0
 
-    ;setup death timer
-    ldi scr0, 0x05
-    out TCCR0B, scr0    ;prescaler 1024
-    LDI scr0, 0x02
-    OUT TIMSK, scr0     ;enable TIMER0 overflow interrupt
-    ;rjmp ucDeath
+    ; Setup Death Timer (Timer0)
+    ldi scr0, 0x05          ; Prescaler 1024
+    out TCCR0B, scr0
+    ldi scr0, 0x02
+    out TIMSK0, scr0        ; tiny84 nutzt TIMSK0
 
-    ;setup registers, memory, etc..
+    ; Initialisierung
     ldi scr0, 0
     mov const0, scr0
     ldi scr0, 1
@@ -137,20 +72,14 @@ reset:
     mov areg, const0
     mov flags, const0
     mov xreg, const0
-    std Y+2, const0     ;CICs seem to use this unitialzed?
-    std Y+3, const0     ;CICs seem to use this unitialzed?
-
 
     rcall EE_READ
 
-    ;setup key address
+    ; Key-Adressen Setup (unverändert)
     in scr0, EEDR
     andi scr0, 0x08
     sbrc scr0, 3
     sbr flags, (1 << FLAG_710x_MODE)
-    ;sbrc scr0, 2
-    ;sbr flags, (1 << FLAG_x105_MODE)
-    nop
     ori flags, (1 << FLAG_x105_MODE)
     ori scr0, CIC_TYPE
     lsl scr0
@@ -453,54 +382,48 @@ m0106:
     nop
 m0106_skip2:
     nop
-    sbic CICPINS, CICPIN1
-    rjmp m0106              ;wait for at 0
+    sbic CICPINS, CICPIN1   ; Prüfe CLK (PA4)
+    rjmp m0106
     in scr0, CICPORT
-    bld scr0, CICPIN0
-    out CICPORT, scr0       ;output [0,1] depending on SREG_T
+    bld scr0, CICPIN0       ; Setze D0 (PA6)
+    out CICPORT, scr0
 m0106_wait1:
     nop
     sbis CICPINS, CICPIN1
     rjmp m0106_wait1
-    nop
     ldi areg, 1
     in scr0, CICPORT
-    sbr scr0, (1 << CICPIN0)    ;output 1
+    sbr scr0, (1 << CICPIN0)
     out CICPORT, scr0
     ret
-;end m0106
 
-;comm routine, sets SREG_C depending on PIN0(switches dir)
 m0112:
     in scr0, CICPORT
     in scr1, CICDDR
-    sbrc scr1, CICPIN0      ;if pin is output
-    bst scr0, CICPIN0       ;store output state(T preset on 1st call), always 1??
-    sbr scr0, (1 << CICPIN0);pullup enabled
-    cbr scr1, (1 << CICPIN0);input
+    sbrc scr1, CICPIN0
+    bst scr0, CICPIN0
+    sbr scr0, (1 << CICPIN0)
+    cbr scr1, (1 << CICPIN0)
     sec
     nop
-    out CICDDR, scr1        ;PIN0 to input
-    out CICPORT, scr0       ;with pullup
+    out CICDDR, scr1
+    out CICPORT, scr0
 m0112_wait0:
-    nop
     nop
     nop
     sbic CICPINS, CICPIN1
     rjmp m0112_wait0
     sbrc flags, FLAG_M0112_M0132_MODE
     rcall m0132_read_delay
-    sbis CICPINS, CICPIN0   ;test pin0
+    sbis CICPINS, CICPIN0
     clc
     nop
     in scr0, CICPORT
     in scr1, CICDDR
     bld scr0, CICPIN0
     sbr scr1, (1 << CICPIN0)
-    out CICPORT, scr0       ;restore port state
-    out CICDDR, scr1        ;set PIN0 back to output
-    nop
-    nop
+    out CICPORT, scr0
+    out CICDDR, scr1
 m0112_wait1:
     nop
     sbis CICPINS, CICPIN1
@@ -973,37 +896,32 @@ isr_tim0_ov:
     sbrs    scr1, 3         ;if bit 3 is set, skip next line
         ldi     scr0, 0x08  ;set scr0 to 8
 
-EE_write:
-    sbic    EECR, EEPE
-    rjmp    EE_write
-
-    ldi     scr1, 0
-    out     EEARH, scr1
-    out     EEARL, scr1
-    out     EEDR, scr0
-
-    sbi     EECR,EEMPE
-    sbi     EECR,EEPE
-
+; --- Death Routine ---
 ucDeath:
     nop
-    ;sbi DDRB, 0
-    ;sbi PORTB, 0
 forever:
     rjmp forever
 
-;end ucDeath
+; --- EEPROM Routinen angepasst für ATtiny84A ---
+EE_write:
+    sbic EECR, EEPE         ; tiny84 nutzt EEPE
+    rjmp EE_write
+    ldi scr1, 0
+    out EEARH, scr1
+    out EEARL, scr1
+    out EEDR, scr0
+    sbi EECR, EEMPE         ; tiny84 nutzt EEMPE
+    sbi EECR, EEPE
+    ret
 
 EE_READ:
     sbic EECR, EEPE
     rjmp EE_READ
-
-    ldi     scr1, 0
-    out     EEARH, scr1
-    out     EEARL, scr1
+    ldi scr1, 0
+    out EEARH, scr1
+    out EEARL, scr1
     sbi EECR, EERE
-ret
-
+    ret
 
 ;end isr_tim0_ov
 ;Keys/Seeds stored as 16bit words, little-endian.
