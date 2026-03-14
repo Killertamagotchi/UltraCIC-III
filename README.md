@@ -1,26 +1,26 @@
-# UltraCIC-III
-This code allows you to create a replacement CIC chip for N64 games that you own on an ATTiny25, ATTiny45 of ATTiny85. 
-The original code was written by jesgdev and updated with multi-region support by saturnu. 
-I simply extended the version Krikzz created under the name UltraCIC-II to support automatic switching between NTSC and PAL if the console was unable to boot.
+Der Fork vom Originalen UltraCIC-III Projekt ist ein Port für den ATTiny84/84a.
+Hintergrund hierzu ist, das einige Repro Flash PCBs die man z.B. bei AliExpress Finden kann anstelle eines
+ATTiny25, ATTiny45 oder ATTiny85 wofür der Originale Code geschrieben wurden ist ein ATTiny84/84a verbaut haben.
+Allerdings haben die nicht gerade selten einen alten Code drauf der kein Automatisches Umschalten zwischen PAL und NTSC erlauben.
+Hiermit kann man eine Angepasste Version von dem Originalen Code auf den ATTiny84/84a Flaschen womit auch die Repor Module dann funktionieren sollten
 
-# Instructions
-- Install avra 
-- Assemble the code
-  - avra UltraCIC-III.asm -d {MCU}
-  - {MCU} must be one of the supported MCUs (attiny25, attiny45 or attiny85)
-- Flash the file to your ATTiny 
-  - e.g.: "avrdude -p t25 -c usbtiny -U flash:w:UltraCIC-III.hex eeprom:w:UltraCIC-III.hex.eep" for attiny25
-- Update fuses
-  - e.g.: "avrdude -p t25 -c usbtiny -U lfuse:w:0xc0:m -U hfuse:w:0xdf:m" for attiny25
-  
-# More Information
-[Sources for UltraCIC-II](https://web.archive.org/web/20180701050159/https://krikzz.com/pub/support/everdrive-64/ultracic2/)
+Bevor man aber den neuen Code drauf Flashed sollte man sicherhalbs halber ein Backup von dem Code vom ATTiny84/84a machen.
 
-[Multi-region patch information](https://krikzz.com/forum/index.php?topic=3450.0)
+Link zum Originalen Projekt:
+https://github.com/ManCloud/UltraCIC-III
 
-[Assembly guide by perkinsb1024](https://bitwise.bperki.com/2019/01/12/repairing-an-n64-cartridge-without-blowing-in-it/)
+_____________________________________________________________________________________
 
-# PCB
-see [pcb](pcb/) subfolder
+This fork of the original UltraCIC-III project is a port for the ATTiny84/84a.
 
-![Preview of UltraCIC-III](UltraCIC-III.png)
+The reason for this is that some repro flash PCBs, which can be found on AliExpress, for example, have an ATTiny84/84a installed instead of an ATTiny25, ATTiny45, or ATTiny85, for which the original code was written.
+
+However, these often have an older codebase that doesn't allow automatic switching between PAL and NTSC.
+
+This fork allows you to flash a modified version of the original code onto the ATTiny84/84a, which should then make the repro modules work.
+
+Before flashing the new code, you should make a backup of the ATTiny84/84a code as a precaution.
+
+Link to the original project:
+
+https://github.com/ManCloud/UltraCIC-III
