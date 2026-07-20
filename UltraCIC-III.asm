@@ -47,7 +47,7 @@ reset:
     ldi scr0, 0xFF
     out CICPORT, scr0       ; Pullups aktivieren
     
-    ldi scr0, 0x07          ; Power Reduction für tiny84 (Timer0 anlassen)
+    ldi scr0, 0x05          ; Power Reduction für tiny84 (Timer0 anlassen)
     out PRR, scr0
     ldi scr0, 0x80
     out ACSR, scr0
