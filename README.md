@@ -1,54 +1,3 @@
-Der Fork vom Originalen UltraCIC-III Projekt ist ein Port für den ATTiny84/84a.
-Hintergrund hierzu ist, das einige Repro Flash PCBs die man z.B. bei AliExpress Finden kann anstelle eines
-ATTiny25, ATTiny45 oder ATTiny85 wofür der Originale Code geschrieben wurden ist ein ATTiny84/84a verbaut haben.
-Allerdings haben die nicht gerade selten einen alten Code drauf der kein Automatisches Umschalten zwischen PAL und NTSC erlauben.
-Hiermit kann man eine Angepasste Version von dem Originalen Code auf den ATTiny84/84a Flaschen womit auch die Repor Module dann funktionieren sollten
-
-Bevor man aber den neuen Code drauf Flashed sollte man sicherhalbs halber ein Backup von dem Code vom ATTiny84/84a machen.
-
-Zum erstellen der benötigten Dateien einfach wie schon im Originalen Code vorgehen.
-Allerdings hier dann den Befehl ausführen
-
-"make attiny84"
-
-Danach sollte im Ordner die Dateien enthalten sein:
-- UltraCIC-III_t84.hex
-- UltraCIC-III.eep.hex
-
-Zusätzlich für das Aufspielen auf den ATTiny84/84a müssen in AVRDUDE (bevorzuge das GUI AVRDUDESS)
-folgende Fuses gesetzt werden:
-- L: 0xC0
-- H: 0xDF
-- E: 0xFF (oder 0x01, beides deaktiviert das Self-Programming)
-
-Ausserdem muss auch der Bitclock gesetzt werden um sicher zu stellen das es auch sauber geschrieben wird bzw. kein Fehler kommt
-
-- -B 125kHz
-  
-oder
-
-- -B 32kHz
-
-Sofern in der UltraCIC-III.asm nicht nochmal abgeänderst ist der Standart Boot auf NTSC und man muss für PAL dann das Modul im PAL N64 einmal einschlaten und wieder aus um das die Region umschaltet.
-
-Will man aber PAL als Standart dann wie im Original Code folgende Stelle ändern
-
-- .ESEG
-- ;.db 0x08   ;set PAL as inital region
-- .db 0x00    ;set NTSC as initial region
-
-in
-
-- .ESEG
-- .db 0x08   ;set PAL as inital region
-- ;.db 0x00    ;set NTSC as initial region
-
-
-Link zum Originalen Projekt:
-https://github.com/ManCloud/UltraCIC-III
-
-_____________________________________________________________________________________
-
 This fork of the original UltraCIC-III project is a port for the ATTiny84/84a.
 The reason for this is that some repro flash PCBs, which can be found on AliExpress, for example, have an ATTiny84/84a installed instead of an ATTiny25, ATTiny45, or ATTiny85, for which the original code was written.
 However, these often have an older codebase that doesn't allow automatic switching between PAL and NTSC.
@@ -92,6 +41,28 @@ in
 - .ESEG
 - .db 0x08 ;set PAL as initial region
 - ;.db 0x00 ;set NTSC as initial region
+
+## Flashing via avrdude (Command Line)
+
+If you are using `avrdude` to flash the ATtiny84A, you can use the following commands. Replace `usbasp` with your specific programmer (e.g., `avrispmkii`, `arduino`, etc.) if necessary.
+
+### 1. Flash Fuses (Mandatory for 16 MHz Clock)
+This sets the Low Fuse to `0xC0` (Internal PLL 16 MHz) and High Fuse to `0xDF`:
+```bash
+avrdude -c usbasp -p t84 -U lfuse:w:0xC0:m -U hfuse:w:0xDF:m
+```
+
+### 2. Flash Firmware (Flash & EEPROM)
+This flashes the compiled `.hex` file and the `.eep` configuration file to the chip:
+```bash
+avrdude -c usbasp -p t84 -U flash:w:UltraCIC-III.hex:i -U eeprom:w:UltraCIC-III.eep:i
+```
+
+### 3. All-in-One Command
+You can also combine everything into a single command to flash the fuses, flash memory, and EEPROM at once:
+```bash
+avrdude -c usbasp -p t84 -U lfuse:w:0xC0:m -U hfuse:w:0xDF:m -U flash:w:UltraCIC-III.hex:i -U eeprom:w:UltraCIC-III.eep:i
+```
 
 
 Link to the original project:
