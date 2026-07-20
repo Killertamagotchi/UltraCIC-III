@@ -17,7 +17,7 @@ Danach sollte im Ordner die Dateien enthalten sein:
 
 Zusätzlich für das Aufspielen auf den ATTiny84/84a müssen in AVRDUDE (bevorzuge das GUI AVRDUDESS)
 folgende Fuses gesetzt werden:
-- L: 0xE2
+- L: 0xC0
 - H: 0xDF
 - E: 0xFF (oder 0x01, beides deaktiviert das Self-Programming)
 
@@ -68,7 +68,7 @@ Afterwards, the folder should contain the following files:
 
 Additionally, for flashing to the ATTiny84/84a, the following fuses must be set in AVRDUDE (preferably the GUI AVRDUDESS):
 
-- L: 0xE2
+- L: 0xC0
 - H: 0xDF
 - E: 0xFF (or 0x01, both disable self-programming)
 
